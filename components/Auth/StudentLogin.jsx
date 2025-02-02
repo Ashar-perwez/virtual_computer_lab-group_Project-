@@ -35,7 +35,7 @@ const StudentLogin = () => {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-gray-100">
-      <div className="md:w-1/2 bg-blue-600 text-white flex flex-col justify-center items-center p-8">
+      <div className="md:w-1/2 bg-navy-600 text-white flex flex-col justify-center items-center p-8">
         <h1 className="text-3xl font-bold mb-4">Student Login</h1>
         <p className="text-lg">Sign in to access your resources and courses.</p>
       </div>

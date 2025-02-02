@@ -1,13 +1,17 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Landing_Navbar from "../src/components/Landing_Navbar"
 import Home from "../src/pages/Home";
 import About from "../src/pages/About";
 import Resources from "../src/pages/Resources";
+import Contact from "../src/pages/Contact"; // Added import statement
 import StudentLogin from "../src/components/Auth/StudentLogin";
 import FacultyLogin from "../src/components/Auth/FacultyLogin";
 import Signup from "../src/components/Auth/Signup";
 import FacultyDashboard from "../src/pages/FacultyDashboard";
+import FacultyProfile from "../src/components/Dashboard/FacultyProfile";
 import Footer from "../src/components/Footer";
 import ForgotPassword from "../src/components/Auth/ForgetPassword";
 import StudentDashboard from "../src/pages/StudentDashboard";
@@ -19,6 +23,7 @@ import MonitorLabs from "../src/components/MonitorLabs";
 const App = () => {
   return (
     <div>
+      <ToastContainer position="top-right" autoClose={3000} />
       <Routes>
         <Route
           path="/"
@@ -44,6 +49,15 @@ const App = () => {
             <div>
               <Landing_Navbar />
               <Resources />
+            </div>
+          }
+        />
+        <Route
+          path="/contact"
+          element={
+            <div>
+              <Landing_Navbar />
+              <Contact />
             </div>
           }
         />
@@ -75,6 +89,7 @@ const App = () => {
           }
         />
         <Route path="/facultydashboard" element={<FacultyDashboard />} />
+        <Route path="/faculty-profile" element={<FacultyProfile />} />
         <Route path="/schedule-labs" element={<ScheduleLabs />} />
         <Route path="/monitor-labs" element={<MonitorLabs />} />
         <Route path="/studentdashboard" element={<StudentDashboard />} />

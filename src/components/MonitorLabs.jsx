@@ -1,209 +1,269 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import chatService from '../services/chatService';
 import labService from '../services/labService';
 
 const MonitorLabs = () => {
   const navigate = useNavigate();
-  const [activeLab, setActiveLab] = useState(null);
-  const [students, setStudents] = useState([]);
+  
+  // Dummy active labs data (same as in FacultyDashboard)
+  const [activeLabs, setActiveLabs] = useState([
+    { 
+      id: 1, 
+      name: "Computer Networks Lab", 
+      students: [
+        { id: 1, name: "Abhash Kumar", status: "active", currentTask: "TCP Implementation", progress: 75 },
+        { id: 2, name: "Rakesh Kumar", status: "idle", currentTask: "UDP Protocol", progress: 45 },
+        { id: 3, name: "Stuti Deoray", status: "active", currentTask: "Network Security", progress: 60 }
+      ],
+      time: "Monday 10:00 AM" 
+    },
+    { 
+      id: 2, 
+      name: "Database Systems Lab", 
+      students: [
+        { id: 4, name: "Anshika Singh", status: "active", currentTask: "SQL Queries", progress: 85 },
+        { id: 5, name: "Brown Munde", status: "active", currentTask: "Database Design", progress: 70 },
+        { id: 6, name: "Honey Singh", status: "idle", currentTask: "Normalization", progress: 30 }
+      ],
+      time: "Tuesday 2:00 PM" 
+    },
+    { 
+      id: 3, 
+      name: "Operating Systems Lab", 
+      students: [
+        { id: 7, name: "Batman", status: "active", currentTask: "Process Scheduling", progress: 55 },
+        { id: 8, name: "Chitti the Robot", status: "active", currentTask: "Memory Management", progress: 90 },
+        { id: 9, name: "Spider Man", status: "idle", currentTask: "File Systems", progress: 40 }
+      ],
+      time: "Wednesday 11:00 AM" 
+    }
+  ]);
+
+  const [selectedLab, setSelectedLab] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
   const [studentCode, setStudentCode] = useState('');
 
+  // Dummy code snippets for demonstration
+  const dummyCodeSnippets = {
+    1: `def implement_tcp():
+    # TCP Implementation
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind(('localhost', 8080))
+    sock.listen(5)
+    # More implementation...`,
+    2: `def udp_protocol():
+    # UDP Implementation
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(('localhost', 8081))
+    # More implementation...`,
+    // ... more code snippets for other students
+  };
+
+  // Dummy chat messages
+  const dummyMessages = {
+    1: [
+      { id: 1, sender: 'Abhash Kumar', text: 'Having trouble with TCP connection', time: '10:15 AM' },
+      { id: 2, sender: 'Faculty', text: 'Check if the port is already in use', time: '10:16 AM' },
+    ],
+    2: [
+      { id: 1, sender: 'Rakesh Kumar', text: 'UDP implementation completed', time: '10:20 AM' },
+      { id: 2, sender: 'Faculty', text: 'Great work! Now add error handling', time: '10:22 AM' },
+    ],
+  };
+
   useEffect(() => {
-    // Get active labs
     const fetchActiveLabs = async () => {
       try {
         const labs = await labService.getActiveLabs();
-        if (labs.length > 0) {
-          setActiveLab(labs[0]); // Select first lab by default
-          fetchActiveStudents(labs[0].id);
-        }
+        setActiveLabs(labs);
       } catch (error) {
         console.error('Error fetching active labs:', error);
       }
     };
 
-    // Get active students for a lab
-    const fetchActiveStudents = async (labId) => {
-      try {
-        const activeStudents = await labService.getActiveStudents(labId);
-        setStudents(activeStudents);
-      } catch (error) {
-        console.error('Error fetching active students:', error);
-      }
-    };
-
     fetchActiveLabs();
+  }, []);
 
-    // Subscribe to student updates
-    const cleanup = labService.onStudentUpdate((update) => {
-      if (update.type === 'code' && selectedStudent?.studentId === update.studentId) {
-        setStudentCode(update.code);
-      }
-    });
+  const handleLabSelect = (lab) => {
+    setSelectedLab(lab);
+    setSelectedStudent(null);
+    setMessages([]);
+    setStudentCode('');
+  };
 
-    // Subscribe to chat messages
-    const chatCleanup = chatService.onMessage((message) => {
-      setMessages(prev => [...prev, message]);
-    });
-
-    return () => {
-      cleanup();
-      chatCleanup();
-      if (selectedStudent) {
-        chatService.leaveChat(selectedStudent.studentId);
-      }
-    };
-  }, [selectedStudent]);
-
-  const handleStudentSelect = async (student) => {
-    if (selectedStudent) {
-      chatService.leaveChat(selectedStudent.studentId);
-    }
+  const handleStudentSelect = (student) => {
     setSelectedStudent(student);
-    setMessages([]); // Clear previous messages
-    setStudentCode(student.code); // Show current student's code
-    chatService.joinChat(student.studentId);
+    setStudentCode(dummyCodeSnippets[student.id] || '// No code available');
+    setMessages(dummyMessages[student.id] || []);
   };
 
-  const handleOpenInEditor = (student) => {
-    navigate('/coding-interface', {
-      state: {
-        studentData: student,
-        labId: activeLab.id,
-        isFaculty: true,
-        currentCode: studentCode
-      }
-    });
-  };
-
-  const sendMessage = (e) => {
+  const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!messageInput.trim() || !selectedStudent) return;
+    if (!messageInput.trim()) return;
 
-    const message = {
-      content: messageInput,
-      sender: 'faculty',
-      studentId: selectedStudent.studentId,
-      timestamp: new Date().toISOString()
+    const newMessage = {
+      id: messages.length + 1,
+      sender: 'Faculty',
+      text: messageInput,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    chatService.sendMessage(message);
+    setMessages([...messages, newMessage]);
     setMessageInput('');
+    toast.success('Message sent successfully');
+    chatService.sendMessage(newMessage);
+  };
+
+  const handleEndSession = (student) => {
+    if (window.confirm('Are you sure you want to end this student\'s session?')) {
+      toast.info(`Ended session for ${student.name}`);
+      // Here you would typically make an API call to end the session
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
+    <div className="min-h-screen bg-gray-900 text-white p-6">
       <div className="max-w-7xl mx-auto">
-        <h2 className="text-3xl font-bold mb-8">Monitor Labs</h2>
-        
-        {activeLab ? (
-          <div className="mb-6">
-            <h3 className="text-xl mb-2">Active Lab: {activeLab.name}</h3>
-            <p className="text-gray-400">Started at: {new Date(activeLab.scheduledAt).toLocaleString()}</p>
-          </div>
-        ) : (
-          <p className="text-xl text-gray-400">No active labs</p>
-        )}
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Monitor Labs</h1>
+          <button
+            onClick={() => navigate('/facultydashboard')}
+            className="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Back to Dashboard
+          </button>
+        </div>
 
-        <div className="grid grid-cols-12 gap-6">
-          {/* Students List */}
-          <div className="col-span-3 bg-gray-800 rounded-lg p-4">
-            <h3 className="text-xl mb-4">Students</h3>
-            <div className="space-y-2">
-              {students.map((student) => (
+        <div className="grid grid-cols-3 gap-6">
+          {/* Active Labs List */}
+          <div className="col-span-1 bg-gray-800 rounded-lg p-4">
+            <h2 className="text-xl font-semibold mb-4">Active Labs</h2>
+            <div className="space-y-4">
+              {activeLabs.map(lab => (
                 <div
-                  key={student.studentId}
-                  className={`p-3 rounded cursor-pointer transition-colors ${
-                    selectedStudent?.studentId === student.studentId
-                      ? 'bg-blue-600'
-                      : 'bg-gray-700 hover:bg-gray-600'
+                  key={lab.id}
+                  onClick={() => handleLabSelect(lab)}
+                  className={`p-4 rounded-lg cursor-pointer transition-colors ${
+                    selectedLab?.id === lab.id ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'
                   }`}
-                  onClick={() => handleStudentSelect(student)}
                 >
-                  <div className="flex items-center justify-between">
-                    <span>{student.name || `Student ${student.studentId}`}</span>
-                    <span
-                      className={`w-3 h-3 rounded-full ${
-                        student.active ? 'bg-green-400' : 'bg-gray-400'
-                      }`}
-                    />
-                  </div>
+                  <h3 className="font-medium">{lab.name}</h3>
+                  <p className="text-sm text-gray-300">{lab.time}</p>
+                  <p className="text-sm text-gray-300">{lab.students.length} students</p>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Code Preview */}
-          {selectedStudent ? (
-            <div className="col-span-6">
-              <div>
-                <div className="bg-gray-900 p-4 rounded h-96 overflow-y-auto font-mono">
-                  <pre className="text-green-400">
-                    {studentCode || '// No code yet'}
-                  </pre>
-                </div>
-                <div className="mt-4 flex space-x-4">
-                  <button 
-                    onClick={() => handleOpenInEditor(selectedStudent)}
-                    className="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+          {/* Students List */}
+          <div className="col-span-1 bg-gray-800 rounded-lg p-4">
+            <h2 className="text-xl font-semibold mb-4">Students</h2>
+            {selectedLab ? (
+              <div className="space-y-4">
+                {selectedLab.students.map(student => (
+                  <div
+                    key={student.id}
+                    className={`p-4 rounded-lg cursor-pointer transition-colors ${
+                      selectedStudent?.id === student.id ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'
+                    }`}
+                    onClick={() => handleStudentSelect(student)}
                   >
-                    Open in Editor
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="col-span-6 flex items-center justify-center h-96 bg-gray-800 rounded-lg">
-              <p className="text-gray-400">Select a student to view their code</p>
-            </div>
-          )}
-
-          {/* Chat/Feedback */}
-          <div className="col-span-3 bg-gray-800 rounded-lg p-4">
-            <h3 className="text-xl mb-4">Chat & Feedback</h3>
-            {selectedStudent ? (
-              <>
-                <div className="h-96 overflow-y-auto mb-4 space-y-3">
-                  {messages.map((message, index) => (
-                    <div
-                      key={index}
-                      className={`p-2 rounded ${
-                        message.sender === 'faculty'
-                          ? 'bg-blue-600 ml-4'
-                          : 'bg-gray-700 mr-4'
-                      }`}
-                    >
-                      <p>{message.content}</p>
-                      <span className="text-xs text-gray-400">
-                        {new Date(message.timestamp).toLocaleTimeString()}
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-medium">{student.name}</h3>
+                        <p className="text-sm text-gray-300">Task: {student.currentTask}</p>
+                        <div className="mt-2 w-full bg-gray-600 rounded-full h-2">
+                          <div
+                            className="bg-green-500 rounded-full h-2"
+                            style={{ width: `${student.progress}%` }}
+                          />
+                        </div>
+                      </div>
+                      <span
+                        className={`px-2 py-1 rounded text-xs ${
+                          student.status === 'active' ? 'bg-green-500' : 'bg-yellow-500'
+                        }`}
+                      >
+                        {student.status}
                       </span>
                     </div>
-                  ))}
-                </div>
-                <form onSubmit={sendMessage} className="flex space-x-2">
-                  <input
-                    type="text"
-                    value={messageInput}
-                    onChange={(e) => setMessageInput(e.target.value)}
-                    placeholder="Type your message..."
-                    className="flex-1 bg-gray-700 rounded px-3 py-2"
-                  />
-                  <button
-                    type="submit"
-                    className="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
-                  >
-                    Send
-                  </button>
-                </form>
-              </>
-            ) : (
-              <div className="h-96 flex items-center justify-center text-gray-500">
-                Select a student to start chatting
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEndSession(student);
+                      }}
+                      className="mt-2 text-sm text-red-400 hover:text-red-300"
+                    >
+                      End Session
+                    </button>
+                  </div>
+                ))}
               </div>
+            ) : (
+              <p className="text-gray-400">Select a lab to view students</p>
+            )}
+          </div>
+
+          {/* Student Details and Chat */}
+          <div className="col-span-1 bg-gray-800 rounded-lg p-4">
+            {selectedStudent ? (
+              <div className="h-full flex flex-col">
+                <h2 className="text-xl font-semibold mb-4">Student Work</h2>
+                
+                {/* Code View */}
+                <div className="bg-gray-900 p-4 rounded mb-4 font-mono text-sm overflow-auto">
+                  <pre>{studentCode}</pre>
+                </div>
+
+                {/* Chat Section */}
+                <div className="flex-1 flex flex-col">
+                  <h3 className="font-medium mb-2">Chat with {selectedStudent.name}</h3>
+                  <div className="flex-1 bg-gray-900 rounded p-4 mb-4 overflow-y-auto">
+                    {messages.map(message => (
+                      <div
+                        key={message.id}
+                        className={`mb-2 ${
+                          message.sender === 'Faculty' ? 'text-right' : 'text-left'
+                        }`}
+                      >
+                        <span className="text-xs text-gray-400">{message.sender}</span>
+                        <div
+                          className={`inline-block rounded-lg px-3 py-2 mt-1 ${
+                            message.sender === 'Faculty'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-700 text-white'
+                          }`}
+                        >
+                          {message.text}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">{message.time}</div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <form onSubmit={handleSendMessage} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={messageInput}
+                      onChange={(e) => setMessageInput(e.target.value)}
+                      placeholder="Type a message..."
+                      className="flex-1 bg-gray-700 rounded px-3 py-2"
+                    />
+                    <button
+                      type="submit"
+                      className="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+                    >
+                      Send
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-400">Select a student to view details</p>
             )}
           </div>
         </div>

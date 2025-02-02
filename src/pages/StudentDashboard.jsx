@@ -5,6 +5,7 @@ import UpcomingLabsSection from "../components/UpcomingLabsSection";
 import CompletedLabsSection from "../components/CompletedLabsSection";
 import Footer from "../components/Footer";
 import StudentNavbar from "../components/Dashboard/StudentNavbar";
+
 const StudentDashboard = () => {
   return (
     <div>

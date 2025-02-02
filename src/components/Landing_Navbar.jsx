@@ -77,6 +77,7 @@ const Landing_Navbar = () => {
             <NavLink to="/">Home</NavLink>
             <NavLink to="/about">About</NavLink>
             <NavLink to="/resources">Resources</NavLink>
+            <NavLink to="/contact">Contact</NavLink>
             <div className="flex space-x-4">
               <motion.button
                 variants={linkVariants}
@@ -115,24 +116,17 @@ const Landing_Navbar = () => {
         initial="closed"
         animate={isMobileMenuOpen ? "open" : "closed"}
         variants={mobileMenuVariants}
-        className="md:hidden"
+        className={`${
+          isMobileMenuOpen ? 'block' : 'hidden'
+        } absolute top-16 right-0 w-64 bg-gray-900/95 backdrop-blur-md shadow-lg rounded-lg py-4 md:hidden`}
       >
-        <div className="px-2 pt-2 pb-3 space-y-1 bg-gradient-to-b from-gray-900/95 to-gray-800/95 backdrop-blur-md">
-          <MobileNavLink to="/" onClick={() => setIsMobileMenuOpen(false)}>
-            Home
-          </MobileNavLink>
-          <MobileNavLink to="/about" onClick={() => setIsMobileMenuOpen(false)}>
-            About
-          </MobileNavLink>
-          <MobileNavLink to="/resources" onClick={() => setIsMobileMenuOpen(false)}>
-            Resources
-          </MobileNavLink>
-          <MobileNavLink to="/faculty-login" onClick={() => setIsMobileMenuOpen(false)}>
-            Faculty Login
-          </MobileNavLink>
-          <MobileNavLink to="/student-login" onClick={() => setIsMobileMenuOpen(false)}>
-            Student Login
-          </MobileNavLink>
+        <div className="flex flex-col space-y-2 px-4">
+          <MobileNavLink to="/" onClick={() => setIsMobileMenuOpen(false)}>Home</MobileNavLink>
+          <MobileNavLink to="/about" onClick={() => setIsMobileMenuOpen(false)}>About</MobileNavLink>
+          <MobileNavLink to="/resources" onClick={() => setIsMobileMenuOpen(false)}>Resources</MobileNavLink>
+          <MobileNavLink to="/contact" onClick={() => setIsMobileMenuOpen(false)}>Contact</MobileNavLink>
+          <MobileNavLink to="/faculty-login" onClick={() => setIsMobileMenuOpen(false)}>Faculty Login</MobileNavLink>
+          <MobileNavLink to="/student-login" onClick={() => setIsMobileMenuOpen(false)}>Student Login</MobileNavLink>
         </div>
       </motion.div>
     </motion.nav>
